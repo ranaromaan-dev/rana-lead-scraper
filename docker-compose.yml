@@ -1,10 +1,34 @@
 services:
+  gmaps:
+    image: gosom/google-maps-scraper:latest
+    restart: unless-stopped
+
+    command:
+      - "-data-folder"
+      - "/gmapsdata"
+
+    volumes:
+      - gmaps_data:/gmapsdata
+
+    expose:
+      - "8080"
+
+    shm_size: "1gb"
+    mem_limit: "2g"
+    cpus: 1
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+
     restart: unless-stopped
+
     expose:
       - "80"
+
     mem_limit: "256m"
     cpus: 0.50
+
+volumes:
+  gmaps_data:
