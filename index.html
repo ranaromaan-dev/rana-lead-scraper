@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Collect business leads and find detailed public lead information." />
+  <title>Lead Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Lead Intelligence home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" role="img">
+            <path d="M8 25.5c0-8.3 5.3-14.8 13.9-16.6 3.2-.7 6.4-.4 9.1.8-7.2 1.1-12.7 5.1-15.6 11.9-1.7 4-1.8 8.2-.5 11.9C10.7 32.2 8 29.4 8 25.5Z"/>
+            <circle cx="25.8" cy="24.4" r="6.2"/>
+          </svg>
+        </span>
+        <span>
+          <strong>Lead Intelligence</strong>
+          <small>Business discovery and enrichment</small>
+        </span>
+      </a>
+
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>System ready</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="hero">
+        <div class="eyebrow">SELF-HOSTED LEAD SYSTEM</div>
+        <h1>Find qualified businesses.<br /><span>Enrich every lead.</span></h1>
+        <p>
+          Use Lead Collector to discover businesses by niche and location, or use Lead Detail Finder
+          to match a person or company from any available identifier.
+        </p>
+      </section>
+
+      <section class="workspace" aria-labelledby="workspace-title">
+        <div class="workspace-top">
+          <div>
+            <p class="section-kicker">Lead tools</p>
+            <h2 id="workspace-title">Choose a workflow</h2>
+          </div>
+
+          <div class="tab-list" role="tablist" aria-label="Lead workflow tabs">
+            <button
+              class="tab-button active"
+              id="collector-tab"
+              role="tab"
+              aria-selected="true"
+              aria-controls="collector-panel"
+              data-tab="collector"
+              type="button"
+            >
+              <span class="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 5h16M6 10h12M9 15h6M11 20h2" />
+                </svg>
+              </span>
+              Lead Collector
+            </button>
+
+            <button
+              class="tab-button"
+              id="finder-tab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="finder-panel"
+              data-tab="finder"
+              type="button"
+            >
+              <span class="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="10.5" cy="10.5" r="5.5" />
+                  <path d="m15 15 4.5 4.5" />
+                </svg>
+              </span>
+              Lead Detail Finder
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-wrap">
+          <section
+            class="tab-panel active"
+            id="collector-panel"
+            role="tabpanel"
+            aria-labelledby="collector-tab"
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="panel-number">01</span>
+                <h3>Lead Collector</h3>
+                <p>Enter a niche and location to collect Google Maps business leads.</p>
+              </div>
+              <span class="panel-badge">Bulk discovery</span>
+            </div>
+
+            <form id="lead-collector-form" class="lead-form" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="collector-country">Country <span>*</span></label>
+                  <input id="collector-country" name="country" type="text" value="United States" required />
+                </div>
+
+                <div class="field">
+                  <label for="collector-state">State <span>*</span></label>
+                  <input id="collector-state" name="state" type="text" placeholder="Florida" required />
+                </div>
+
+                <div class="field">
+                  <label for="collector-city">City</label>
+                  <input id="collector-city" name="city" type="text" placeholder="Miami (optional)" />
+                </div>
+
+                <div class="field">
+                  <label for="collector-niche">Niche <span>*</span></label>
+                  <input
+                    id="collector-niche"
+                    name="niche"
+                    type="text"
+                    placeholder="Commercial cleaning companies"
+                    required
+                  />
+                </div>
+
+                <div class="field">
+                  <label for="collector-max-leads">Maximum leads</label>
+                  <input id="collector-max-leads" name="max_leads" type="number" min="1" max="5000" value="100" />
+                </div>
+
+                <div class="field">
+                  <label for="collector-depth">Search depth</label>
+                  <select id="collector-depth" name="depth">
+                    <option value="1" selected>1 — Fast test</option>
+                    <option value="2">2 — Balanced</option>
+                    <option value="3">3 — Deeper search</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="collector-radius">Radius (meters)</label>
+                  <input id="collector-radius" name="radius" type="number" min="1000" max="50000" step="1000" value="10000" />
+                </div>
+
+                <div class="field">
+                  <label for="collector-language">Language</label>
+                  <input id="collector-language" name="language" type="text" value="en" />
+                </div>
+
+                <div class="field field-full">
+                  <label for="collector-exclude">Exclude keywords</label>
+                  <input
+                    id="collector-exclude"
+                    name="exclude_keywords"
+                    type="text"
+                    placeholder="franchise, residential maid, permanently closed"
+                  />
+                  <small>Separate multiple keywords with commas.</small>
+                </div>
+
+                <div class="field field-full options-row">
+                  <label class="check-card">
+                    <input name="fetch_emails" type="checkbox" checked />
+                    <span class="check-ui"></span>
+                    <span>
+                      <strong>Fetch emails</strong>
+                      <small>Crawl business websites for public email addresses.</small>
+                    </span>
+                  </label>
+
+                  <label class="check-card">
+                    <input name="fetch_socials" type="checkbox" checked />
+                    <span class="check-ui"></span>
+                    <span>
+                      <strong>Find social profiles</strong>
+                      <small>Discover public LinkedIn, Facebook, Instagram and X links.</small>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-footer">
+                <p class="form-note">
+                  Results will be processed by the n8n Lead Collector workflow.
+                </p>
+                <button class="submit-button" type="submit">
+                  <span class="button-label">Collect Leads</span>
+                  <span class="button-spinner" aria-hidden="true"></span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section
+            class="tab-panel"
+            id="finder-panel"
+            role="tabpanel"
+            aria-labelledby="finder-tab"
+            hidden
+          >
+            <div class="panel-heading">
+              <div>
+                <span class="panel-number">02</span>
+                <h3>Lead Detail Finder</h3>
+                <p>Enter any available identifier and find matching public business or professional details.</p>
+              </div>
+              <span class="panel-badge">Identity matching</span>
+            </div>
+
+            <form id="lead-finder-form" class="lead-form" novalidate>
+              <div class="notice">
+                Add at least one strong identifier. More identifiers produce a more reliable match.
+              </div>
+
+              <div class="form-grid">
+                <div class="field">
+                  <label for="finder-person-name">Person full name</label>
+                  <input id="finder-person-name" name="person_name" type="text" placeholder="John Smith" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-company-name">Company name</label>
+                  <input id="finder-company-name" name="company_name" type="text" placeholder="ABC Commercial Cleaning" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-email">Email address</label>
+                  <input id="finder-email" name="email" type="email" placeholder="john@company.com" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-phone">Phone number</label>
+                  <input id="finder-phone" name="phone" type="tel" placeholder="+1 305 555 1234" />
+                </div>
+
+                <div class="field field-full">
+                  <label for="finder-website">Website</label>
+                  <input id="finder-website" name="website" type="url" placeholder="https://company.com" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-linkedin">LinkedIn URL or handle</label>
+                  <input id="finder-linkedin" name="linkedin" type="text" placeholder="linkedin.com/in/... or company page" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-facebook">Facebook URL or handle</label>
+                  <input id="finder-facebook" name="facebook" type="text" placeholder="facebook.com/company" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-instagram">Instagram URL or handle</label>
+                  <input id="finder-instagram" name="instagram" type="text" placeholder="@companyhandle" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-x">X URL or handle</label>
+                  <input id="finder-x" name="x_handle" type="text" placeholder="@companyhandle" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-country">Country</label>
+                  <input id="finder-country" name="country" type="text" value="United States" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-state">State</label>
+                  <input id="finder-state" name="state" type="text" placeholder="Florida" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-city">City</label>
+                  <input id="finder-city" name="city" type="text" placeholder="Miami" />
+                </div>
+
+                <div class="field">
+                  <label for="finder-notes">Notes</label>
+                  <input id="finder-notes" name="notes" type="text" placeholder="Any additional matching context" />
+                </div>
+              </div>
+
+              <div class="form-footer">
+                <p class="form-note">
+                  Only publicly available business and professional information will be processed.
+                </p>
+                <button class="submit-button" type="submit">
+                  <span class="button-label">Find Lead Details</span>
+                  <span class="button-spinner" aria-hidden="true"></span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section id="response-panel" class="response-panel" aria-live="polite" hidden>
+            <div class="response-header">
+              <div>
+                <span id="response-status-icon" class="response-icon"></span>
+                <div>
+                  <strong id="response-title">Request submitted</strong>
+                  <p id="response-message">Your workflow has started.</p>
+                </div>
+              </div>
+              <div class="response-actions">
+                <button id="copy-response" class="secondary-button" type="button">Copy response</button>
+                <button id="close-response" class="icon-button" type="button" aria-label="Close response">×</button>
+              </div>
+            </div>
+            <pre id="response-output"></pre>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Lead Intelligence System</span>
+      <span>Powered by n8n and self-hosted data services</span>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="/config.js"></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>
