@@ -6,6 +6,8 @@ services:
     command:
       - "-data-folder"
       - "/gmapsdata"
+      - "-proxies"
+      - "${GMAPS_PROXY_LIST}"
 
     volumes:
       - gmaps_data:/gmapsdata
