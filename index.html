@@ -200,6 +200,84 @@
                 </button>
               </div>
             </form>
+
+            <section class="jobs-section" aria-labelledby="recent-jobs-title">
+              <div class="jobs-section-header">
+                <div>
+                  <div class="jobs-title-row">
+                    <span class="jobs-kicker">Live job history</span>
+                    <span id="jobs-live-indicator" class="jobs-live-indicator">Auto refresh on</span>
+                  </div>
+                  <h3 id="recent-jobs-title">Recent Scraping Jobs</h3>
+                  <p>Track active searches, inspect job details, and download the original Google Maps Scraper CSV.</p>
+                </div>
+
+                <button id="refresh-jobs" class="refresh-button" type="button">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" />
+                  </svg>
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              <div class="jobs-meta-bar">
+                <div class="jobs-stat">
+                  <span class="jobs-stat-icon jobs-stat-icon-all"></span>
+                  <span><strong id="jobs-total-count">0</strong> total jobs</span>
+                </div>
+                <div class="jobs-stat">
+                  <span class="jobs-stat-icon jobs-stat-icon-active"></span>
+                  <span><strong id="jobs-active-count">0</strong> processing</span>
+                </div>
+                <div class="jobs-stat jobs-last-updated">
+                  Last updated <span id="jobs-updated-at">—</span>
+                </div>
+              </div>
+
+              <div id="jobs-loading" class="jobs-state">
+                <span class="jobs-loader" aria-hidden="true"></span>
+                <span>Loading scraping jobs…</span>
+              </div>
+
+              <div id="jobs-error" class="jobs-state jobs-state-error" hidden>
+                <strong>Could not load jobs.</strong>
+                <span id="jobs-error-message">Please refresh and try again.</span>
+              </div>
+
+              <div id="jobs-empty" class="jobs-state jobs-state-empty" hidden>
+                <span class="empty-state-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 6h16M6 11h12M9 16h6" />
+                  </svg>
+                </span>
+                <strong>No scraping jobs yet</strong>
+                <span>Submit the Lead Collector form and the new job will appear here.</span>
+              </div>
+
+              <div id="jobs-content" class="jobs-content" hidden>
+                <div class="jobs-table-wrap">
+                  <table class="jobs-table">
+                    <thead>
+                      <tr>
+                        <th>Job ID</th>
+                        <th>Job Name</th>
+                        <th>Job Date</th>
+                        <th>Status</th>
+                        <th class="jobs-actions-heading">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="jobs-table-body"></tbody>
+                  </table>
+                </div>
+
+                <div id="jobs-card-list" class="jobs-card-list"></div>
+
+                <div class="jobs-footer">
+                  <span id="jobs-visible-summary">Showing 0 jobs</span>
+                  <button id="load-more-jobs" class="load-more-button" type="button" hidden>Show more jobs</button>
+                </div>
+              </div>
+            </section>
           </section>
 
           <section
@@ -329,6 +407,77 @@
       <span>Lead Intelligence System</span>
       <span>Powered by n8n and self-hosted data services</span>
     </footer>
+  </div>
+
+  <div id="job-modal" class="job-modal" hidden>
+    <div class="job-modal-backdrop" data-close-job-modal></div>
+    <section class="job-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="job-modal-title">
+      <div class="job-modal-header">
+        <div>
+          <span class="jobs-kicker">Scraper job details</span>
+          <h2 id="job-modal-title">Job details</h2>
+        </div>
+        <button class="job-modal-close" type="button" data-close-job-modal aria-label="Close job details">×</button>
+      </div>
+
+      <div id="job-modal-loading" class="job-modal-loading">
+        <span class="jobs-loader" aria-hidden="true"></span>
+        <span>Loading job details…</span>
+      </div>
+
+      <div id="job-modal-content" class="job-modal-content" hidden>
+        <div class="job-modal-summary">
+          <div>
+            <span>Job name</span>
+            <strong id="job-detail-name">—</strong>
+          </div>
+          <span id="job-detail-status" class="job-status">—</span>
+        </div>
+
+        <dl class="job-detail-grid">
+          <div class="job-detail-wide">
+            <dt>Job ID</dt>
+            <dd>
+              <code id="job-detail-id">—</code>
+              <button id="copy-job-id" class="copy-id-button" type="button">Copy</button>
+            </dd>
+          </div>
+          <div>
+            <dt>Created</dt>
+            <dd id="job-detail-date">—</dd>
+          </div>
+          <div>
+            <dt>Language</dt>
+            <dd id="job-detail-language">—</dd>
+          </div>
+          <div>
+            <dt>Search depth</dt>
+            <dd id="job-detail-depth">—</dd>
+          </div>
+          <div>
+            <dt>Radius</dt>
+            <dd id="job-detail-radius">—</dd>
+          </div>
+          <div>
+            <dt>Email discovery</dt>
+            <dd id="job-detail-email">—</dd>
+          </div>
+          <div class="job-detail-wide">
+            <dt>Keywords</dt>
+            <dd id="job-detail-keywords">—</dd>
+          </div>
+        </dl>
+
+        <div class="job-modal-actions">
+          <button class="secondary-button" type="button" data-close-job-modal>Close</button>
+          <a id="job-detail-download" class="job-action job-action-download" href="#">Download CSV</a>
+        </div>
+      </div>
+
+      <div id="job-modal-error" class="job-modal-error" hidden>
+        Job details could not be loaded.
+      </div>
+    </section>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
