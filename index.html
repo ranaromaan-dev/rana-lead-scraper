@@ -26,9 +26,13 @@
         </span>
       </a>
 
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        <span>System ready</span>
+      <div class="header-actions">
+        <a class="utility-link" href="/google-maps-ui/" target="_blank" rel="noopener">Scraper UI</a>
+        <a class="utility-link" href="/api/docs" target="_blank" rel="noopener">API Docs</a>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span>System ready</span>
+        </div>
       </div>
     </header>
 
@@ -226,8 +230,16 @@
                   <span><strong id="jobs-total-count">0</strong> total jobs</span>
                 </div>
                 <div class="jobs-stat">
+                  <span class="jobs-stat-icon jobs-stat-icon-completed"></span>
+                  <span><strong id="jobs-completed-count">0</strong> completed</span>
+                </div>
+                <div class="jobs-stat">
                   <span class="jobs-stat-icon jobs-stat-icon-active"></span>
-                  <span><strong id="jobs-active-count">0</strong> processing</span>
+                  <span><strong id="jobs-processing-count">0</strong> processing</span>
+                </div>
+                <div class="jobs-stat">
+                  <span class="jobs-stat-icon jobs-stat-icon-pending"></span>
+                  <span><strong id="jobs-pending-count">0</strong> pending</span>
                 </div>
                 <div class="jobs-stat jobs-last-updated">
                   Last updated <span id="jobs-updated-at">—</span>
@@ -384,6 +396,10 @@
           </section>
 
           <section id="response-panel" class="response-panel" aria-live="polite" hidden>
+            <div class="response-tabs" role="tablist" aria-label="Workflow responses">
+              <button class="response-tab active" type="button" data-response-tab="collector" aria-selected="true">Lead Collector</button>
+              <button class="response-tab" type="button" data-response-tab="finder" aria-selected="false">Lead Detail Finder</button>
+            </div>
             <div class="response-header">
               <div>
                 <span id="response-status-icon" class="response-icon"></span>
@@ -467,6 +483,47 @@
             <dd id="job-detail-keywords">—</dd>
           </div>
         </dl>
+
+        <section class="job-results-section" aria-labelledby="job-results-title">
+          <div class="job-results-header">
+            <div>
+              <span class="jobs-kicker">CSV results</span>
+              <h3 id="job-results-title">Lead details preview</h3>
+            </div>
+            <strong id="job-result-count">0 leads</strong>
+          </div>
+
+          <div id="job-results-loading" class="job-results-state">
+            <span class="jobs-loader" aria-hidden="true"></span>
+            <span>Loading lead details…</span>
+          </div>
+
+          <div id="job-results-empty" class="job-results-state" hidden>
+            Results will appear when the scraper job is completed.
+          </div>
+
+          <div id="job-results-error" class="job-results-state job-results-error" hidden>
+            Lead preview could not be loaded. The CSV download may still be available.
+          </div>
+
+          <div id="job-results-content" class="job-results-content" hidden>
+            <div class="job-results-table-wrap">
+              <table class="job-results-table">
+                <thead>
+                  <tr>
+                    <th>Business</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Contact</th>
+                    <th>Rating</th>
+                  </tr>
+                </thead>
+                <tbody id="job-results-body"></tbody>
+              </table>
+            </div>
+            <p id="job-results-note" class="job-results-note"></p>
+          </div>
+        </section>
 
         <div class="job-modal-actions">
           <button class="secondary-button" type="button" data-close-job-modal>Close</button>
