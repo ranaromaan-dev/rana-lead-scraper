@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=4.0.0" />
 </head>
 <body>
   <div class="page-shell">
@@ -227,19 +227,19 @@
               <div class="jobs-meta-bar">
                 <div class="jobs-stat">
                   <span class="jobs-stat-icon jobs-stat-icon-all"></span>
-                  <span><strong id="jobs-total-count">0</strong> total jobs</span>
+                  <span><strong id="jobs-total-count" data-jobs-count="total">0</strong> total jobs</span>
                 </div>
                 <div class="jobs-stat">
                   <span class="jobs-stat-icon jobs-stat-icon-completed"></span>
-                  <span><strong id="jobs-completed-count">0</strong> completed</span>
+                  <span><strong id="jobs-completed-count" data-jobs-count="completed">0</strong> completed</span>
                 </div>
                 <div class="jobs-stat">
                   <span class="jobs-stat-icon jobs-stat-icon-active"></span>
-                  <span><strong id="jobs-processing-count">0</strong> processing</span>
+                  <span><strong id="jobs-processing-count" data-jobs-count="processing">0</strong> processing</span>
                 </div>
                 <div class="jobs-stat">
                   <span class="jobs-stat-icon jobs-stat-icon-pending"></span>
-                  <span><strong id="jobs-pending-count">0</strong> pending</span>
+                  <span><strong id="jobs-pending-count" data-jobs-count="pending">0</strong> pending</span>
                 </div>
                 <div class="jobs-stat jobs-last-updated">
                   Last updated <span id="jobs-updated-at">—</span>
@@ -539,7 +539,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="/config.js"></script>
-  <script src="/app.js" defer></script>
+  <script src="/config.js?v=4.0.0"></script>
+  <script src="/app.js?v=4.0.0" defer></script>
 </body>
 </html>
