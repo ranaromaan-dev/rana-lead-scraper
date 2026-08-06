@@ -22,15 +22,31 @@ services:
     mem_limit: "2g"
     cpus: 1
 
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    restart: unless-stopped
+
+    expose:
+      - "11235"
+
+    shm_size: "1gb"
+    mem_limit: "4g"
+    cpus: 2
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+
     restart: unless-stopped
+
     depends_on:
       - gmaps
+      - crawl4ai
+
     expose:
       - "80"
+
     mem_limit: "256m"
     cpus: 0.50
 
