@@ -23,18 +23,18 @@ services:
     cpus: 1
 
   crawl4ai:
-  image: unclecode/crawl4ai:latest
-  restart: unless-stopped
+    image: unclecode/crawl4ai:latest
+    restart: unless-stopped
 
-  environment:
-    CRAWL4AI_API_TOKEN: "${CRAWL4AI_API_TOKEN}"
+    environment:
+      CRAWL4AI_API_TOKEN: "${CRAWL4AI_API_TOKEN}"
 
-  expose:
-    - "11235"
+    expose:
+      - "11235"
 
-  shm_size: "1gb"
-  mem_limit: "4g"
-  cpus: 2
+    shm_size: "1gb"
+    mem_limit: "4g"
+    cpus: 2
 
   frontend:
     build:
@@ -51,7 +51,7 @@ services:
       - "80"
 
     mem_limit: "256m"
-    cpus: 0.50
+    cpus: 0.5
 
 volumes:
   gmaps_data:
