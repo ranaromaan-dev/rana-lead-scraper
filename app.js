@@ -23,10 +23,10 @@
   const jobsContent = document.getElementById("jobs-content");
   const jobsTableBody = document.getElementById("jobs-table-body");
   const jobsCardList = document.getElementById("jobs-card-list");
-  const jobsTotalCount = document.getElementById("jobs-total-count");
-  const jobsCompletedCount = document.getElementById("jobs-completed-count");
-  const jobsProcessingCount = document.getElementById("jobs-processing-count");
-  const jobsPendingCount = document.getElementById("jobs-pending-count");
+  const jobsTotalCount = document.getElementById("jobs-total-count") || document.querySelector('[data-jobs-count="total"]');
+  const jobsCompletedCount = document.getElementById("jobs-completed-count") || document.querySelector('[data-jobs-count="completed"]');
+  const jobsProcessingCount = document.getElementById("jobs-processing-count") || document.querySelector('[data-jobs-count="processing"]');
+  const jobsPendingCount = document.getElementById("jobs-pending-count") || document.querySelector('[data-jobs-count="pending"]');
   const jobsUpdatedAt = document.getElementById("jobs-updated-at");
   const jobsVisibleSummary = document.getElementById("jobs-visible-summary");
   const loadMoreJobsButton = document.getElementById("load-more-jobs");
@@ -66,6 +66,22 @@
   let jobsTimer = null;
   let jobsRequestController = null;
   let selectedJobId = "";
+
+  function setText(element, value) {
+    if (element) element.textContent = String(value ?? "");
+  }
+
+  function setHidden(element, hidden) {
+    if (element) element.hidden = Boolean(hidden);
+  }
+
+  function setHtml(element, html) {
+    if (element) element.innerHTML = html;
+  }
+
+  function getCountElement(primaryId, fallbackSelector) {
+    return document.getElementById(primaryId) || document.querySelector(fallbackSelector);
+  }
 
   function activateTab(tabName) {
     tabButtons.forEach((button) => {
@@ -405,23 +421,50 @@
     responsePanel.hidden = true;
   });
 
+  function parseJobData(job) {
+    let raw = job?.data ?? job?.Data ?? job?.job_data ?? job?.JobData ?? job?.payload ?? job?.Payload ?? {};
+
+    if (typeof raw === "string") {
+      try {
+        raw = JSON.parse(raw);
+      } catch {
+        raw = {};
+      }
+    }
+
+    if (raw?.body && typeof raw.body === "object" && !Array.isArray(raw.body)) {
+      raw = raw.body;
+    }
+
+    return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  }
+
   function normalizeJobsResponse(result) {
+    const body = result?.body;
     const candidates = Array.isArray(result)
       ? result
       : Array.isArray(result?.jobs)
         ? result.jobs
         : Array.isArray(result?.data)
           ? result.data
-          : [];
+          : Array.isArray(result?.results)
+            ? result.results
+            : Array.isArray(body)
+              ? body
+              : [];
 
     return candidates
-      .map((job) => ({
-        ...job,
-        id: String(job?.id || job?.ID || job?.job_id || "").trim(),
-        name: String(job?.name || job?.Name || job?.search_query || "Untitled scraping job").trim(),
-        date: job?.date || job?.Date || job?.created_at || job?.createdAt || "",
-        status: String(job?.status || job?.Status || "unknown").trim().toLowerCase()
-      }))
+      .map((job) => {
+        const data = parseJobData(job);
+        return {
+          ...job,
+          data,
+          id: String(job?.id || job?.ID || job?.job_id || job?.JobID || "").trim(),
+          name: String(job?.name || job?.Name || job?.job_name || job?.search_query || data?.name || "Untitled scraping job").trim(),
+          date: job?.date || job?.Date || job?.job_date || job?.created_at || job?.createdAt || "",
+          status: String(job?.status || job?.Status || job?.job_status || "unknown").trim().toLowerCase()
+        };
+      })
       .filter((job) => job.id)
       .sort((a, b) => {
         const aTime = parseJobDate(a.date)?.getTime() || 0;
@@ -543,31 +586,33 @@
     const processingCount = statusKeys.filter((key) => key === "processing").length;
     const pendingCount = statusKeys.filter((key) => key === "pending").length;
 
-    jobsTotalCount.textContent = String(jobs.length);
-    jobsCompletedCount.textContent = String(completedCount);
-    jobsProcessingCount.textContent = String(processingCount);
-    jobsPendingCount.textContent = String(pendingCount);
-    jobsLoading.hidden = true;
-    jobsError.hidden = true;
-    jobsEmpty.hidden = jobs.length !== 0;
-    jobsContent.hidden = jobs.length === 0;
+    setText(jobsTotalCount, jobs.length);
+    setText(jobsCompletedCount, completedCount);
+    setText(jobsProcessingCount, processingCount);
+    setText(jobsPendingCount, pendingCount);
+    setHidden(jobsLoading, true);
+    setHidden(jobsError, true);
+    setHidden(jobsEmpty, jobs.length !== 0);
+    setHidden(jobsContent, jobs.length === 0);
 
-    jobsTableBody.innerHTML = visible.map(jobRowTemplate).join("");
-    jobsCardList.innerHTML = visible.map(jobCardTemplate).join("");
+    setHtml(jobsTableBody, visible.map(jobRowTemplate).join(""));
+    setHtml(jobsCardList, visible.map(jobCardTemplate).join(""));
 
-    jobsVisibleSummary.textContent = `Showing ${visible.length} of ${jobs.length} jobs`;
-    loadMoreJobsButton.hidden = visible.length >= jobs.length;
+    setText(jobsVisibleSummary, `Showing ${visible.length} of ${jobs.length} jobs`);
+    setHidden(loadMoreJobsButton, visible.length >= jobs.length);
   }
 
   function setJobsLoading(loading, silent = false) {
-    refreshJobsButton.disabled = loading;
-    refreshJobsButton.classList.toggle("loading", loading);
+    if (refreshJobsButton) {
+      refreshJobsButton.disabled = loading;
+      refreshJobsButton.classList.toggle("loading", loading);
+    }
 
     if (loading && !silent && jobs.length === 0) {
-      jobsLoading.hidden = false;
-      jobsError.hidden = true;
-      jobsEmpty.hidden = true;
-      jobsContent.hidden = true;
+      setHidden(jobsLoading, false);
+      setHidden(jobsError, true);
+      setHidden(jobsEmpty, true);
+      setHidden(jobsContent, true);
     }
   }
 
@@ -583,18 +628,18 @@
       }, 30000);
 
       jobs = normalizeJobsResponse(result);
-      jobsUpdatedAt.textContent = new Intl.DateTimeFormat(undefined, {
+      setText(jobsUpdatedAt, new Intl.DateTimeFormat(undefined, {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit"
-      }).format(new Date());
+      }).format(new Date()));
       renderJobs();
     } catch (error) {
       if (error.name === "AbortError") return;
-      jobsLoading.hidden = true;
-      jobsError.hidden = false;
-      jobsErrorMessage.textContent = error.message || "Please refresh and try again.";
-      if (jobs.length === 0) jobsContent.hidden = true;
+      setHidden(jobsLoading, true);
+      setHidden(jobsError, false);
+      setText(jobsErrorMessage, error.message || "Please refresh and try again.");
+      if (jobs.length === 0) setHidden(jobsContent, true);
     } finally {
       setJobsLoading(false, true);
       jobsRequestController = null;
@@ -608,11 +653,11 @@
     }, jobsRefreshInterval);
   }
 
-  refreshJobsButton.addEventListener("click", () => {
+  refreshJobsButton?.addEventListener("click", () => {
     loadJobs().then(() => showToast("Jobs refreshed."));
   });
 
-  loadMoreJobsButton.addEventListener("click", () => {
+  loadMoreJobsButton?.addEventListener("click", () => {
     visibleJobs += jobsPageSize;
     renderJobs();
   });
@@ -624,6 +669,7 @@
   }
 
   function setJobDetailStatus(statusValue) {
+    if (!jobDetailStatus) return;
     const status = getStatusInfo(statusValue);
     jobDetailStatus.className = `job-status job-status-${status.key}`;
     jobDetailStatus.innerHTML = `<span></span>${escapeHtml(status.label)}`;
@@ -798,22 +844,29 @@
   }
 
   function populateJobModal(job) {
-    const data = job?.data && typeof job.data === "object" ? job.data : {};
-    const keywords = Array.isArray(data.keywords) ? data.keywords.join(", ") : (data.keywords || job.name || "—");
+    const data = parseJobData(job);
+    const keywordsRaw = data.keywords ?? data.keyword ?? job.keywords ?? job.name;
+    const keywords = Array.isArray(keywordsRaw) ? keywordsRaw.join(", ") : String(keywordsRaw || "—");
+    const language = data.lang ?? data.language ?? job.lang ?? job.language;
+    const depth = data.depth ?? data.search_depth ?? job.depth;
+    const radius = data.radius ?? job.radius;
+    const email = data.email ?? data.fetch_emails ?? job.email;
 
-    jobDetailName.textContent = job.name || "Untitled scraping job";
-    jobDetailId.textContent = job.id || selectedJobId;
-    jobDetailDate.textContent = formatJobDate(job.date);
-    jobDetailLanguage.textContent = data.lang || "—";
-    jobDetailDepth.textContent = data.depth ?? "—";
-    jobDetailRadius.textContent = data.radius ? `${Number(data.radius).toLocaleString()} m` : "—";
-    jobDetailEmail.textContent = data.email === true ? "Enabled" : data.email === false ? "Disabled" : "—";
-    jobDetailKeywords.textContent = keywords || "—";
-    jobDetailDownload.href = getDownloadUrl(job.id || selectedJobId);
+    setText(jobDetailName, job.name || "Untitled scraping job");
+    setText(jobDetailId, job.id || selectedJobId);
+    setText(jobDetailDate, formatJobDate(job.date));
+    setText(jobDetailLanguage, language || "—");
+    setText(jobDetailDepth, depth ?? "—");
+    setText(jobDetailRadius, radius !== undefined && radius !== null && radius !== "" ? `${Number(radius).toLocaleString()} m` : "—");
+    setText(jobDetailEmail, email === true ? "Enabled" : email === false ? "Disabled" : "—");
+    setText(jobDetailKeywords, keywords || "—");
 
-    const status = getStatusInfo(job.status);
-    jobDetailDownload.classList.toggle("disabled", status.key !== "completed");
-    jobDetailDownload.setAttribute("aria-disabled", String(status.key !== "completed"));
+    if (jobDetailDownload) {
+      jobDetailDownload.href = getDownloadUrl(job.id || selectedJobId);
+      const status = getStatusInfo(job.status);
+      jobDetailDownload.classList.toggle("disabled", status.key !== "completed");
+      jobDetailDownload.setAttribute("aria-disabled", String(status.key !== "completed"));
+    }
     setJobDetailStatus(job.status);
   }
 
@@ -863,7 +916,7 @@
     if (event.key === "Escape" && !jobModal.hidden) closeJobModal();
   });
 
-  copyJobIdButton.addEventListener("click", async () => {
+  copyJobIdButton?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(selectedJobId);
       showToast("Job ID copied.");
@@ -872,7 +925,7 @@
     }
   });
 
-  jobDetailDownload.addEventListener("click", (event) => {
+  jobDetailDownload?.addEventListener("click", (event) => {
     if (jobDetailDownload.classList.contains("disabled")) {
       event.preventDefault();
       showToast("CSV will be available when the job is completed.");
@@ -883,6 +936,7 @@
     if (!document.hidden) loadJobs({ silent: true });
   });
 
+  console.info("Lead Intelligence frontend v4 loaded");
   loadJobs();
   startJobsPolling();
 })();
