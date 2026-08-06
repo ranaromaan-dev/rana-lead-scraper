@@ -12,6 +12,7 @@
   const responseOutput = document.getElementById("response-output");
   const copyResponseButton = document.getElementById("copy-response");
   const closeResponseButton = document.getElementById("close-response");
+  const responseTabButtons = document.querySelectorAll("[data-response-tab]");
   const toast = document.getElementById("toast");
 
   const refreshJobsButton = document.getElementById("refresh-jobs");
@@ -23,7 +24,9 @@
   const jobsTableBody = document.getElementById("jobs-table-body");
   const jobsCardList = document.getElementById("jobs-card-list");
   const jobsTotalCount = document.getElementById("jobs-total-count");
-  const jobsActiveCount = document.getElementById("jobs-active-count");
+  const jobsCompletedCount = document.getElementById("jobs-completed-count");
+  const jobsProcessingCount = document.getElementById("jobs-processing-count");
+  const jobsPendingCount = document.getElementById("jobs-pending-count");
   const jobsUpdatedAt = document.getElementById("jobs-updated-at");
   const jobsVisibleSummary = document.getElementById("jobs-visible-summary");
   const loadMoreJobsButton = document.getElementById("load-more-jobs");
@@ -43,12 +46,21 @@
   const jobDetailKeywords = document.getElementById("job-detail-keywords");
   const jobDetailDownload = document.getElementById("job-detail-download");
   const copyJobIdButton = document.getElementById("copy-job-id");
+  const jobResultCount = document.getElementById("job-result-count");
+  const jobResultsLoading = document.getElementById("job-results-loading");
+  const jobResultsEmpty = document.getElementById("job-results-empty");
+  const jobResultsError = document.getElementById("job-results-error");
+  const jobResultsContent = document.getElementById("job-results-content");
+  const jobResultsBody = document.getElementById("job-results-body");
+  const jobResultsNote = document.getElementById("job-results-note");
 
   const jobsApiBase = String(config.SCRAPER_JOBS_API || "/api/v1/jobs").replace(/\/$/, "");
   const jobsPageSize = Math.max(Number(config.JOBS_PAGE_SIZE || 8), 1);
   const jobsRefreshInterval = Math.max(Number(config.JOBS_REFRESH_INTERVAL || 10000), 5000);
 
   let latestResponse = "";
+  let activeResponseTab = "collector";
+  const responseStore = { collector: null, finder: null };
   let jobs = [];
   let visibleJobs = jobsPageSize;
   let jobsTimer = null;
@@ -222,14 +234,40 @@
     }, timeoutMs);
   }
 
-  function showResponse(type, title, message, data) {
-    responsePanel.hidden = false;
-    responsePanel.classList.toggle("error", type === "error");
-    responseTitle.textContent = title;
-    responseMessage.textContent = message;
+  function renderResponseTab(tabName) {
+    activeResponseTab = tabName;
+    responseTabButtons.forEach((button) => {
+      const active = button.dataset.responseTab === tabName;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
 
-    latestResponse = typeof data === "string" ? data : JSON.stringify(data ?? {}, null, 2);
+    const stored = responseStore[tabName];
+    responsePanel.classList.toggle("error", stored?.type === "error");
+
+    if (!stored) {
+      responseTitle.textContent = tabName === "collector" ? "No Lead Collector response yet" : "No Lead Detail Finder response yet";
+      responseMessage.textContent = "Submit this workflow to see its latest response.";
+      latestResponse = "No response available.";
+      responseOutput.textContent = latestResponse;
+      return;
+    }
+
+    responseTitle.textContent = stored.title;
+    responseMessage.textContent = stored.message;
+    latestResponse = stored.output;
     responseOutput.textContent = latestResponse;
+  }
+
+  function showResponse(type, title, message, data, tabName = "collector") {
+    responseStore[tabName] = {
+      type,
+      title,
+      message,
+      output: typeof data === "string" ? data : JSON.stringify(data ?? {}, null, 2)
+    };
+    responsePanel.hidden = false;
+    renderResponseTab(tabName);
     responsePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -241,10 +279,32 @@
   }
 
   function getResultJobId(result) {
-    return String(result?.job_id || result?.id || result?.data?.job_id || result?.data?.id || "").trim();
+    const value = String(result?.job_id || result?.id || result?.data?.job_id || result?.data?.id || "").trim();
+    return value.includes("{{") || value.includes("}}") ? "" : value;
   }
 
-  async function handleSubmit({ form, endpoint, workflowName, validator, onSuccess }) {
+  function sanitizeWorkflowResponse(result) {
+    if (!result || typeof result !== "object") return result;
+    const clean = JSON.parse(JSON.stringify(result));
+    const candidates = [clean, clean.data].filter((value) => value && typeof value === "object");
+    let removedTemplate = false;
+
+    candidates.forEach((value) => {
+      ["job_id", "id"].forEach((key) => {
+        if (typeof value[key] === "string" && (value[key].includes("{{") || value[key].includes("}}"))) {
+          delete value[key];
+          removedTemplate = true;
+        }
+      });
+    });
+
+    if (removedTemplate) {
+      clean.note = "The scraper job was accepted. Its real job ID will appear in Recent Scraping Jobs.";
+    }
+    return clean;
+  }
+
+  async function handleSubmit({ form, endpoint, workflowName, validator, onSuccess, responseTab }) {
     if (!validator(form)) return;
 
     if (isPlaceholderWebhook(endpoint)) {
@@ -252,7 +312,7 @@
         workflow: workflowName,
         required_file: "config.js",
         current_endpoint: endpoint
-      });
+      }, responseTab);
       return;
     }
 
@@ -268,7 +328,8 @@
 
     try {
       const result = await postJson(endpoint, payload, Number(config.REQUEST_TIMEOUT || 120000));
-      showResponse("success", "Request submitted successfully", `${workflowName} workflow accepted the request.`, result);
+      const displayResult = sanitizeWorkflowResponse(result);
+      showResponse("success", "Request submitted successfully", `${workflowName} workflow accepted the request.`, displayResult, responseTab);
       if (typeof onSuccess === "function") onSuccess(result, payload);
     } catch (error) {
       const aborted = error.name === "AbortError";
@@ -276,7 +337,8 @@
         "error",
         aborted ? "Request timed out" : "Request failed",
         aborted ? "The workflow did not respond within the configured timeout." : error.message,
-        error.response || { error: error.message, endpoint }
+        error.response || { error: error.message, endpoint },
+        responseTab
       );
     } finally {
       setButtonLoading(button, false);
@@ -290,6 +352,7 @@
       endpoint: config.LEAD_COLLECTOR_WEBHOOK,
       workflowName: "lead-collector",
       validator: validateCollector,
+      responseTab: "collector",
       onSuccess: (result, payload) => {
         const jobId = getResultJobId(result);
         if (jobId) {
@@ -317,7 +380,15 @@
       form: finderForm,
       endpoint: config.LEAD_DETAIL_FINDER_WEBHOOK,
       workflowName: "lead-detail-finder",
-      validator: validateFinder
+      validator: validateFinder,
+      responseTab: "finder"
+    });
+  });
+
+  responseTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      responsePanel.hidden = false;
+      renderResponseTab(button.dataset.responseTab);
     });
   });
 
@@ -370,8 +441,12 @@
       return { key: "failed", label: value === "cancelled" || value === "canceled" ? "Cancelled" : "Failed" };
     }
 
-    if (["pending", "processing", "running", "started", "queued", "not_found"].includes(value)) {
-      return { key: "processing", label: value === "queued" ? "Queued" : "Processing" };
+    if (["working", "processing", "running", "started"].includes(value)) {
+      return { key: "processing", label: "Processing" };
+    }
+
+    if (["pending", "queued", "not_found"].includes(value)) {
+      return { key: "pending", label: value === "queued" ? "Queued" : "Pending" };
     }
 
     return { key: "unknown", label: value ? titleCase(value) : "Unknown" };
@@ -463,10 +538,15 @@
 
   function renderJobs() {
     const visible = jobs.slice(0, visibleJobs);
-    const activeCount = jobs.filter((job) => getStatusInfo(job.status).key === "processing").length;
+    const statusKeys = jobs.map((job) => getStatusInfo(job.status).key);
+    const completedCount = statusKeys.filter((key) => key === "completed").length;
+    const processingCount = statusKeys.filter((key) => key === "processing").length;
+    const pendingCount = statusKeys.filter((key) => key === "pending").length;
 
     jobsTotalCount.textContent = String(jobs.length);
-    jobsActiveCount.textContent = String(activeCount);
+    jobsCompletedCount.textContent = String(completedCount);
+    jobsProcessingCount.textContent = String(processingCount);
+    jobsPendingCount.textContent = String(pendingCount);
     jobsLoading.hidden = true;
     jobsError.hidden = true;
     jobsEmpty.hidden = jobs.length !== 0;
@@ -549,6 +629,174 @@
     jobDetailStatus.innerHTML = `<span></span>${escapeHtml(status.label)}`;
   }
 
+  function parseCsv(text) {
+    const input = String(text || "").replace(/^\uFEFF/, "");
+    const records = [];
+    let row = [];
+    let field = "";
+    let quoted = false;
+
+    for (let index = 0; index < input.length; index += 1) {
+      const char = input[index];
+      const next = input[index + 1];
+
+      if (quoted) {
+        if (char === '"' && next === '"') {
+          field += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = false;
+        } else {
+          field += char;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        quoted = true;
+      } else if (char === ',') {
+        row.push(field);
+        field = "";
+      } else if (char === '\n') {
+        row.push(field.replace(/\r$/, ""));
+        if (row.some((value) => String(value).trim() !== "")) records.push(row);
+        row = [];
+        field = "";
+      } else {
+        field += char;
+      }
+    }
+
+    row.push(field.replace(/\r$/, ""));
+    if (row.some((value) => String(value).trim() !== "")) records.push(row);
+    if (records.length < 2) return [];
+
+    const headers = records[0].map((header) => String(header).trim());
+    return records.slice(1).map((values) => {
+      const result = {};
+      headers.forEach((header, index) => {
+        result[header] = values[index] ?? "";
+      });
+      return result;
+    });
+  }
+
+  function firstRowValue(row, keys) {
+    for (const key of keys) {
+      const value = row?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value).trim();
+      }
+    }
+    return "";
+  }
+
+  function safeHttpUrl(value) {
+    try {
+      const url = new URL(String(value || "").trim());
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function firstEmail(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return String(parsed[0] || "").trim();
+    } catch {
+      // Continue with comma-separated text.
+    }
+    return raw.split(/[;,]/)[0].replace(/[\[\]"]/g, "").trim();
+  }
+
+  function resetJobResults() {
+    jobResultCount.textContent = "0 leads";
+    jobResultsLoading.hidden = false;
+    jobResultsEmpty.hidden = true;
+    jobResultsError.hidden = true;
+    jobResultsContent.hidden = true;
+    jobResultsBody.innerHTML = "";
+    jobResultsNote.textContent = "";
+  }
+
+  function jobLeadRowTemplate(row) {
+    const business = firstRowValue(row, ["title", "business_name", "name"]);
+    const category = firstRowValue(row, ["category", "categories"]);
+    const location = firstRowValue(row, ["address", "complete_address", "street"]);
+    const phone = firstRowValue(row, ["phone", "phone_number"]);
+    const website = safeHttpUrl(firstRowValue(row, ["website", "web_site"]));
+    const email = firstEmail(firstRowValue(row, ["primary_email", "emails", "all_emails"]));
+    const mapsUrl = safeHttpUrl(firstRowValue(row, ["link", "google_maps_url"]));
+    const rating = firstRowValue(row, ["review_rating", "rating"]);
+    const reviews = firstRowValue(row, ["review_count", "reviews"]);
+
+    const businessMarkup = mapsUrl
+      ? `<a class="lead-business-link" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener">${escapeHtml(business || "Untitled business")}</a>`
+      : `<strong>${escapeHtml(business || "Untitled business")}</strong>`;
+
+    const contact = [
+      phone ? `<span>${escapeHtml(phone)}</span>` : "",
+      email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : "",
+      website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener">Website</a>` : ""
+    ].filter(Boolean).join("");
+
+    const ratingMarkup = rating
+      ? `<strong>${escapeHtml(rating)}</strong>${reviews ? `<span>${escapeHtml(reviews)} reviews</span>` : ""}`
+      : "—";
+
+    return `
+      <tr>
+        <td>${businessMarkup}</td>
+        <td>${escapeHtml(category || "—")}</td>
+        <td>${escapeHtml(location || "—")}</td>
+        <td><div class="lead-contact-stack">${contact || "—"}</div></td>
+        <td><div class="lead-rating-stack">${ratingMarkup}</div></td>
+      </tr>`;
+  }
+
+  async function loadJobResults(jobId, statusValue) {
+    const status = getStatusInfo(statusValue);
+    resetJobResults();
+
+    if (status.key !== "completed") {
+      jobResultsLoading.hidden = true;
+      jobResultsEmpty.hidden = false;
+      return;
+    }
+
+    try {
+      const response = await fetch(getDownloadUrl(jobId), {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "text/csv, text/plain, */*" }
+      });
+
+      if (!response.ok) throw new Error(`CSV request failed with status ${response.status}`);
+      const rows = parseCsv(await response.text());
+
+      jobResultsLoading.hidden = true;
+      if (rows.length === 0) {
+        jobResultsEmpty.hidden = false;
+        return;
+      }
+
+      const previewLimit = 12;
+      jobResultCount.textContent = `${rows.length.toLocaleString()} ${rows.length === 1 ? "lead" : "leads"}`;
+      jobResultsBody.innerHTML = rows.slice(0, previewLimit).map(jobLeadRowTemplate).join("");
+      jobResultsNote.textContent = rows.length > previewLimit
+        ? `Showing the first ${previewLimit} leads. Download the CSV to view all ${rows.length.toLocaleString()} records.`
+        : `Showing all ${rows.length.toLocaleString()} records.`;
+      jobResultsContent.hidden = false;
+    } catch (error) {
+      console.error("Could not load job CSV preview", error);
+      jobResultsLoading.hidden = true;
+      jobResultsError.hidden = false;
+    }
+  }
+
   function populateJobModal(job) {
     const data = job?.data && typeof job.data === "object" ? job.data : {};
     const keywords = Array.isArray(data.keywords) ? data.keywords.join(", ") : (data.keywords || job.name || "—");
@@ -576,24 +824,26 @@
     jobModalLoading.hidden = false;
     jobModalContent.hidden = true;
     jobModalError.hidden = true;
+    resetJobResults();
+
+    const cached = jobs.find((job) => job.id === jobId);
+    let job = cached || { id: jobId, name: "Scraper job", date: "", status: "unknown" };
 
     try {
       const result = await requestJson(`${jobsApiBase}/${encodeURIComponent(jobId)}`, { method: "GET" }, 30000);
-      const normalized = normalizeJobsResponse([result])[0] || { ...result, id: jobId };
-      populateJobModal(normalized);
-      jobModalLoading.hidden = true;
-      jobModalContent.hidden = false;
+      job = normalizeJobsResponse([result])[0] || { ...result, id: jobId };
     } catch (error) {
-      const cached = jobs.find((job) => job.id === jobId);
-      if (cached) {
-        populateJobModal(cached);
+      if (!cached) {
         jobModalLoading.hidden = true;
-        jobModalContent.hidden = false;
+        jobModalError.hidden = false;
         return;
       }
-      jobModalLoading.hidden = true;
-      jobModalError.hidden = false;
     }
+
+    populateJobModal(job);
+    jobModalLoading.hidden = true;
+    jobModalContent.hidden = false;
+    loadJobResults(jobId, job.status);
   }
 
   document.addEventListener("click", (event) => {
